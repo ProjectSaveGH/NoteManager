@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoteManager Login</title>
+  <link rel="stylesheet" href="data/css" />
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-sm p-8 rounded-2xl shadow-lg bg-white dark:bg-gray-800">
+    <h1 class="text-2xl font-bold text-center mb-6">🔐 NoteManager Login</h1>
+    <form id="loginForm" class="flex flex-col gap-4">
+      <input id="username" type="text" name="username" placeholder="Benutzername" class="p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-700 focus:outline-none" required />
+      <input id="password" type="password" name="password" placeholder="Passwort" class="p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-700 focus:outline-none" required />
+      <button id="submitBtn" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition">Login</button>
+    </form>
+
+    <div class="text-center mt-6">
+      <button id="toggleMode" class="px-4 py-2 rounded-lg border dark:border-gray-600">🌙 / ☀️ Toggle</button>
+    </div>
+  </div>
+
+  <script>
+    // Dark/Light Mode Toggle
+    const btn = document.getElementById("toggleMode");
+    btn.addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+    });
+
+    const API_BASE = 'http://localhost:3000';
+    const form = document.getElementById('loginForm');
+    const output = document.getElementById('output');
+    const submitBtn = document.getElementById('submitBtn');
+
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Prüfe...';
+
+
+      const username = document.getElementById('username').value.trim();
+      const passwd = document.getElementById('password').value;
+      const qs = new URLSearchParams({ username, passwd }).toString();
+      const url = `${API_BASE}/user/verify?${qs}`;
+
+
+      try {
+        const res = await fetch(url, { method: 'GET' });
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+
+
+        // Weiterleitung bei validem Login
+        if(res.ok && data.ok) {
+          window.location.href = `/home?user=${encodeURIComponent(username)}`;
+        }
+      } catch (err) {
+        output.textContent = JSON.stringify({ error: String(err) }, null, 2);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+      }
+    });
+      
+      
+        
+      
+  </script>
+</body>
+</html>
+

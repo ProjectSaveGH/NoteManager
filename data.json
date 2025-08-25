@@ -1,0 +1,16 @@
+{
+  "user": [
+    {
+      "username": "jdkdk",
+      "passwd": "888"
+    },
+    {
+      "username": "alex",
+      "passwd": "$2a$10$GH9Q/9UYKAX586hcSxwo5.RTd8OlLIQxgSEpwqSbfd1r3wL6VRg4e"
+    },
+    {
+      "username": "demo",
+      "passwd": "$2b$10$KnwHvIHoMBC3m1B0d6NxZeEKEStAzqk2nwgJyf4xw40Fz5CT5Qhua"
+    }
+  ]
+}
