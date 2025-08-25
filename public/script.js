@@ -3,7 +3,16 @@
   // Helper: get element safely
   const $ = (sel) => document.querySelector(sel);
 
-  // THEME: auto-detect + toggle support if a toggle exists
+  /**
+   * Apply the preferred color theme to the document root.
+   *
+   * Determines the effective theme by reading a persisted preference from localStorage ('dark' or 'light')
+   * and falling back to the OS-level preference (prefers-color-scheme). It then ensures `document.documentElement`
+   * has the `dark` class when dark mode is chosen and the `light` class when light mode is chosen.
+   *
+   * This function has no return value and may fail silently (e.g., in environments where access to
+   * window.matchMedia or localStorage is restricted).
+   */
   function applyPreferredTheme() {
     try {
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;

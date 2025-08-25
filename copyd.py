@@ -2,6 +2,17 @@ import os
 import pyperclip
 
 def dir_to_dict(root_path):
+    """
+    Return a mapping of each file's path (relative to root_path) to its UTF-8 contents.
+    
+    Walks the directory tree under `root_path` and builds a dict where keys are file paths relative to `root_path` and values are the file contents read with UTF-8. The `node_modules` directory is skipped. If a file cannot be read, its value is a string of the form "<<Error reading file: {exception}>>".
+    
+    Parameters:
+        root_path (str): Root directory to walk.
+    
+    Returns:
+        dict: Mapping from relative file path (str) to file contents or an error string (str).
+    """
     file_dict = {}
     for root, dirs, files in os.walk(root_path):
         # node_modules skippen
