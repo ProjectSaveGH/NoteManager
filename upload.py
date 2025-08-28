@@ -104,20 +104,42 @@ run_verbose(["git", "checkout", "-b", branch_name], description=f"Creating branc
 run_verbose(["git", "commit", "-m", commit_message], description="Committing changes")
 
 # Push branch
-run_verbose(["git", "push", "origin", branch_name], description="Pushing branch to remote")
+run_verbose(["git", "push", "origin", branch_name], description="Pushing Branch to remote")
+# GitHub API info
+repo = os.getenv("GITHUB_REPO", "ProjectSaveGH/NoteManager")
+token = os.getenv("GITHUB_TOKEN")
+if not token:
+    console.print("[bold red]Error:[/bold red] GITHUB_TOKEN must be set")
+    raise ValueError("GITHUB_TOKEN not set")
 
-# Create PR
-run_verbose([
-    "gh", "pr", "create",
-    "--base", base_branch,
-    "--head", branch_name,
-    "--title", pr_title,
-    "--body", f"Commit Message:\n{commit_message}\n\nThis PR was generated automatically using Gemini."
-], description="Creating Pull Request")
+headers = {"Authorization": f"token {token}"}
 
-# Add all detected labels
-for label in labels:
-    run_verbose(["gh", "pr", "edit", "--add-label", label, branch_name], description=f"Adding label: {label}")
+# Create Pull Request via API
+url_create_pr = f"https://api.github.com/repos/{repo}/pulls"
+payload = {
+    "title": pr_title,
+    "head": branch_name,
+    "base": base_branch,
+    "body": f"Commit Message:\n{commit_message}\n\nThis PR was generated automatically using Gemini."
+}
+response = requests.post(url_create_pr, json=payload, headers=headers)
+
+if response.status_code == 201:
+    pr_number = response.json()["number"]
+    console.print(f"[bold green]✅ Pull Request created: #{pr_number}[/bold green]")
+else:
+    console.print(f"[bold red]❌ Failed to create PR:[/bold red] {response.status_code} {response.text}")
+    pr_number = None
+
+# Add labels if PR creation succeeded
+if pr_number:
+    url_labels = f"https://api.github.com/repos/{repo}/issues/{pr_number}/labels"
+    payload_labels = {"labels": labels}
+    resp_labels = requests.post(url_labels, json=payload_labels, headers=headers)
+    if resp_labels.status_code == 200:
+        console.print(f"[bold green]✅ Labels added to PR #{pr_number}:[/bold green] {', '.join(labels)}")
+    else:
+        console.print(f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}")
 
 # Clean up
 if os.path.exists(diff_file):
