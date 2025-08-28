@@ -48,11 +48,13 @@
       try {
         const res = await fetch(url, { method: 'GET' });
         const data = await res.json();
-        output.textContent = JSON.stringify(data, null, 2);
+        output.textContent = data;
+        console.warn(data);
+        await fetch(`${API_BASE}/log?msg=User ${username} login attempt: ${data.success}`, { method: 'GET' });
 
 
         // Weiterleitung bei validem Login
-        if(res.ok && data.ok) {
+        if(res.ok && data.success) {
           window.location.href = `/home?user=${encodeURIComponent(username)}`;
         }
       } catch (err) {

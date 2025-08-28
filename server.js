@@ -13,13 +13,20 @@ const randomNum = Math.floor(Math.random() * 1000000);
 const logFile = path.join(__dirname, `notemanager_${isoTime}-${randomNum}.log`);
 const log = (msg) => {
   const text = typeof msg === "string" ? msg : JSON.stringify(msg, null, 2);
-  console.log(text);
   fs.appendFileSync(logFile, text + "\n");
 };
 
 // === Middleware ===
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  next();
+});
 
 // Request/Response Logger Middleware
 app.use((req, res, next) => {
@@ -30,7 +37,13 @@ app.use((req, res, next) => {
   log(`\n=== Incoming Request ===`);
   log(`${req.method} ${req.originalUrl}`);
   log({ headers: req.headers });
+  console.log(`\n=== Incoming Request ===`);
+  console.log(`${req.method} ${req.originalUrl}`);
+  console.log({ headers: req.headers });
+
+
   if (req.body && Object.keys(req.body).length > 0) {
+    console.log({ body: req.body });
     log({ body: req.body });
   }
 
@@ -46,10 +59,19 @@ app.use((req, res, next) => {
     log({ status: res.statusCode, headers: res.getHeaders() });
     log("Body: " + (body.length > 500 ? body.slice(0, 500) + " ...[truncated]" : body));
     log("========================\n");
+    console.log(`--- Outgoing Response ---`);
+    console.log({ status: res.statusCode, headers: res.getHeaders() });
+    console.log("Body: " + (body.length > 500 ? body.slice(0, 500) + " ...[truncated]" : body));
+    console.log("========================\n");
     return oldEnd.apply(res, [chunk, ...args]);
   };
 
   next();
+});
+
+app.get("/log", (req, res) => {
+  console.log(`EXTERNAL LOG :: ${req.query.msg}`);
+  log(`EXTERNAL LOG :: ${req.query.msg}`);
 });
 
 // === Static files ===
