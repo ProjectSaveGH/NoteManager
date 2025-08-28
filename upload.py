@@ -1,6 +1,7 @@
 import os
 import subprocess
 import time
+import requests
 from google.genai import Client
 from dotenv import load_dotenv
 from rich.console import Console
