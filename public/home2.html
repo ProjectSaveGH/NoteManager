@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="de" class="light">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteManager | User: <span id="username">USERNAME</span></title>
+    <link rel="stylesheet" href="data/css">
+  </head>
+  <body>
+    
+    <header>
+      <button id="toggleSidebar">Toggle SideBar</button>
+      <div>NoteManager</div>
+      <div>
+        <span id="username"></span>
+        <button id="userMenu">Menu</button>
+      </div>
+    </header>
+    
+    <aside>
+      <a>Category 1</a>
+      <a>Category 2</a>
+    </aside>
+
+    <main>
+      
+      <!-- EDITOR TOPBAR -->
+      <div id="editorTopbar">
+        <button id="funcCut">CUT</button>
+        <button id="funcPaste">PASTE</button>
+        <button id="funcCopy">COPY</button>
+        <button id="funcMore">More...</button>
+      </div>
+
+      <div id="splitView">
+        <!-- LEFT SIDE - CONENT VIEW -->
+        <div id="content">
+          Data...
+        </div>
+
+        <!-- RIGHT SIDE - EDITOR -->
+        <div id="editor">
+          <textarea placeholder="Data..."></textarea>
+        </div>
+      </div>
+
+    </main>
+
+  </body>
+</html>
