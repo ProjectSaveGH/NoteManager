@@ -1,65 +1,149 @@
 <!DOCTYPE html>
 <html lang="de" class="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UnoCSS Layout</title>
-  <!-- UnoCSS Output -->
-  <link rel="stylesheet" href="data/css">
-</head>
-<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteManager | User</title>
+    <link rel="stylesheet" href="data/css">
+    <script>
+      // Darkmode Toggle Logik
+      function toggleDarkMode() {
+        const html = document.documentElement;
+        if (html.classList.contains("dark")) {
+          html.classList.remove("dark");
+          html.classList.add("light");
+          localStorage.setItem("theme", "light");
+        } else {
+          html.classList.remove("light");
+          html.classList.add("dark");
+          localStorage.setItem("theme", "dark");
+        }
+      }
 
-  <!-- Topbar -->
-  <header class="w-full h-16 bg-gray-200 dark:bg-gray-800 flex items-center px-4 shadow-md">
-    <button id="toggleSidebar" class="mr-4 px-2 py-1 bg-gray-300 dark:bg-gray-700 rounded i-menu-rounded">
-    </button>
-    <h1 class="font-bold text-lg">Meine App</h1>
-    <button id="toggleTheme" class="ml-auto px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded">
-      Toggle Dark/Light
-    </button>
-  </header>
+      // Sidebar Toggle Logik
+      function toggleSidebar() {
+        const sidebar = document.querySelector('aside');
+        sidebar.classList.toggle('w-60'); // erweitert
+        sidebar.classList.toggle('w-16'); // eingeklappt
+      }
 
-  <div class="flex flex-1">
-<!-- Sidebar -->
-<aside id="sidebar" class="w-64 p-4 bg-gray-100 dark:bg-gray-800 h-full transition-all duration-300 flex flex-col">
-  <button id="toggleSidebar" class="mb-4 p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-    ☰
-  </button>
-  <nav class="flex flex-col gap-2">
-    <a href="/home" class="px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">Home</a>
-    <a href="/notes" class="px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">Notizen</a>
-    <a href="/settings" class="px-3 py-2 rounded hover:bg-blue-500 hover:text-white transition">Einstellungen</a>
-  </nav>
-</aside>
+      // Beim Laden gespeicherte Einstellung setzen
+      window.addEventListener("DOMContentLoaded", () => {
+        const saved = localStorage.getItem("theme");
+        if (saved) {
+          document.documentElement.classList.remove("light", "dark");
+          document.documentElement.classList.add(saved);
+        }
 
+        // Sidebar initial erweitern
+        const sidebar = document.querySelector('aside');
+        sidebar.classList.add('w-60');
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col">
-      
-      <!-- Editor Topbar -->
-      <div class="h-12 bg-gray-200 dark:bg-gray-800 flex items-center px-4 shadow-sm">
-        <span class="font-semibold">Editor Topbar</span>
+        // Toggle Button aktivieren
+        document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+      });
+    </script>
+    <style>
+      /* Text bei eingeklapptem Zustand ausblenden */
+      aside.w-16 .sidebar-text {
+        display: none;
+      }
+
+      /* Buttons unsichtbar, aber funktional */
+      .invisible-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        color: inherit;
+        cursor: pointer;
+      }
+      .invisible-btn * {
+        pointer-events: none; /* nur Button selbst klickbar */
+      }
+    </style>
+  </head>
+  <body class="h-screen grid grid-rows-[auto_1fr] grid-cols-[250px_1fr] font-sans text-gray-800 dark:text-gray-200 dark:bg-slate-900">
+
+    <!-- HEADER -->
+    <header class="col-span-2 flex items-center justify-between px-6 py-3 bg-slate-800 text-white dark:bg-slate-900 shadow-md">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar Toggle -->
+        <button id="toggleSidebar" class="flex items-center gap-2 px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 transition">
+          <i class="i-heroicons-outline-bars-3"></i>
+          <span class="hidden sm:inline">Sidebar</span>
+        </button>
+
+        <!-- Darkmode Toggle -->
+        <button onclick="toggleDarkMode()" class="flex items-center gap-2 px-3 py-1 rounded bg-yellow-500 text-black hover:bg-yellow-400 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 transition">
+          <i class="i-heroicons-outline-moon dark:i-heroicons-outline-sun"></i>
+          <span class="hidden sm:inline">Theme</span>
+        </button>
       </div>
 
-      <!-- Content Split -->
-      <div class="flex flex-1 overflow-hidden">
-        <!-- Display Seite -->
-        <div class="flex-1 bg-gray-50 dark:bg-gray-900 p-4 overflow-auto border-r border-gray-300 dark:border-gray-700">
-          <h2 class="font-bold text-xl mb-4">Display Seite</h2>
-          <p>Hier wird der Inhalt angezeigt...</p>
+      <div class="text-xl font-bold">NoteManager</div>
+
+      <div class="flex items-center gap-3">
+        <span id="username" class="font-medium"></span>
+        <!-- User Menu -->
+        <button id="userMenu" class="flex items-center gap-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 transition">
+          <i class="i-heroicons-outline-user-circle"></i>
+          <span class="hidden sm:inline">Menu</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="bg-slate-100 border-r border-slate-200 p-4 flex flex-col gap-2 dark:bg-slate-800 dark:border-slate-700">
+      <a href="#" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        <i class="i-heroicons-outline-folder"></i>
+        <span class="sidebar-text">Category 1</span>
+      </a>
+      <a href="#" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+        <i class="i-heroicons-outline-clipboard-document"></i>
+        <span class="sidebar-text">Category 2</span>
+      </a>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="p-4 overflow-y-auto">
+      
+      <!-- EDITOR TOPBAR -->
+      <div id="editorTopbar" class="flex gap-2 mb-4">
+        <button id="funcCut" class="invisible-btn flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 transition">
+          <i class="i-heroicons-outline-scissors"></i>
+          <span class="hidden sm:inline">Cut</span>
+        </button>
+
+        <button id="funcPaste" class="invisible-btn flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 transition">
+          <i class="i-heroicons-outline-clipboard-document"></i>
+          <span class="hidden sm:inline">Paste</span>
+        </button>
+
+        <button id="funcCopy" class="invisible-btn flex items-center gap-2 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 transition">
+          <i class="i-heroicons-outline-document-duplicate"></i>
+          <span class="hidden sm:inline">Copy</span>
+        </button>
+
+        <button id="funcMore" class="invisible-btn flex items-center gap-2 px-3 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 dark:bg-gray-500 dark:hover:bg-gray-400 transition">
+          <i class="i-heroicons-outline-ellipsis-horizontal"></i>
+          <span class="hidden sm:inline">More</span>
+        </button>
+      </div>
+
+      <!-- SPLIT VIEW -->
+      <div id="splitView" class="grid grid-cols-2 gap-4">
+        
+        <!-- LEFT SIDE -->
+        <div id="content" class="p-4 bg-white border border-slate-200 rounded shadow-sm dark:bg-slate-800 dark:border-slate-700">
+          Data...
         </div>
 
-        <!-- Editor Seite -->
-        <div class="flex-1 bg-gray-100 dark:bg-gray-800 p-4 overflow-auto">
-          <h2 class="font-bold text-xl mb-4">Editor Seite</h2>
-          <textarea class="w-full h-full p-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded resize-none" placeholder="Schreibe hier..."></textarea>
+        <!-- RIGHT SIDE -->
+        <div id="editor" class="p-4 bg-white border border-slate-200 rounded shadow-sm dark:bg-slate-800 dark:border-slate-700">
+          Editor...
         </div>
       </div>
     </main>
-  </div>
-
-  
-  <script src="script.js" defer></script>
-</body>
+  </body>
 </html>
-

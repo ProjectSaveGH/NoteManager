@@ -1,4 +1,5 @@
-import { defineConfig, presetWind3, presetWind } from 'unocss';
+import { defineConfig, presetWind3 } from 'unocss';
+import presetIcons from '@unocss/preset-icons';
 
 export default defineConfig({
   content: {
@@ -8,6 +9,9 @@ export default defineConfig({
   },
   presets: [
     presetWind3(),
-    presetWind(),
+    presetIcons({
+      scale: 1.2,
+      warn: true,
+    }),
   ],
 });
