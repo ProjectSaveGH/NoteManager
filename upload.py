@@ -142,6 +142,16 @@ if pr_number:
     else:
         console.print(f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}")
 
+# Optional: reset local main to match remote (opt-in)
+if os.getenv("RESET_LOCAL_MAIN", "0") == "1":
+    run_verbose(
+        ["git", "fetch", "origin", "--prune"],
+        description="Sync with origin before resetting local main"
+    )
+    run_verbose(
+        ["git", "checkout", "-B", "main", "origin/main"],
+        description="Reset local main to match origin/main"
+    )
 # Clean up
 if os.path.exists(diff_file):
     os.remove(diff_file)
