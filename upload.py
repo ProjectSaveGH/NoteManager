@@ -142,6 +142,8 @@ if pr_number:
     else:
         console.print(f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}")
 
+run_verbose(["git", "checkout", "-B", "main"])
+
 # Clean up
 if os.path.exists(diff_file):
     os.remove(diff_file)
