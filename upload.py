@@ -1,7 +1,7 @@
 import os
 import subprocess
-import time
 import requests
+import uuid
 from google.genai import Client
 from dotenv import load_dotenv
 from rich.console import Console
@@ -98,7 +98,7 @@ if not pr_title:
 console.print(Panel(pr_title, title="PR Title", style="yellow"))
 
 # Create branch
-branch_name = f"{labels[0]}/auto-update-{int(time.time())}"
+branch_name = f"{labels[0]}/{uuid.uuid4()}"
 run_verbose(["git", "checkout", "-b", branch_name], description=f"Creating branch: {branch_name}")
 
 # Commit changes
@@ -142,7 +142,12 @@ if pr_number:
     else:
         console.print(f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}")
 
+run_verbose(["git", "checkout", "-B", "main"])
+
 # Clean up
 if os.path.exists(diff_file):
     os.remove(diff_file)
     console.print(f"[bold magenta]Temporary diff file {diff_file} removed[/bold magenta]")
+
+# input("")
+# os.system("cls" if os.name == "nt" else "clear")
