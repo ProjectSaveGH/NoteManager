@@ -152,6 +152,7 @@ if os.getenv("RESET_LOCAL_MAIN", "0") == "1":
         ["git", "checkout", "-B", "main", "origin/main"],
         description="Reset local main to match origin/main"
     )
+    run_verbose(["git", "pull"], description="Trying to pull changes, if previous step did not work")
 # Clean up
 if os.path.exists(diff_file):
     os.remove(diff_file)
