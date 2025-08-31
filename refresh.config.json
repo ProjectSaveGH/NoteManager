@@ -1,0 +1,19 @@
+{
+  "exclude_from_backup": [
+    "__pycache__",
+    ".backup",
+    ".backup/*",
+    ".backup/**"
+  ],
+  "protected_files": [
+    ".env",
+    ".env.local",
+    "secrets.json"
+  ],
+  "hooks": {
+    "pre_update": [],
+    "post_update": []
+  },
+  "dry_run": false,
+  "backup_password": "ALex1408"
+}
