@@ -270,17 +270,27 @@ app.delete("/category/delete", (req, res) => {
     let deleted = false;
     jsonTools("./data.json", (json) => {
       if (!Array.isArray(json.category)) json.category = [];
-      const index = json.category.findIndex(cat => cat.id == id && cat.user === user);
+
+      // Validate and strictly compare numerical id
+      const idNum = Number.parseInt(id, 10);
+      if (!Number.isFinite(idNum)) throw new Error("id must be an integer");
+      const index = json.category.findIndex(
+        cat => cat.id === idNum && cat.user === user
+      );
       if (index === -1) throw new Error("Category not found");
+
       json.category.splice(index, 1);
       deleted = true;
     });
-    if (deleted) res.json({ success: true, message: "Category deleted", id });
+
+    if (deleted) {
+      // Return the parsed numeric id in the response
+      res.json({ success: true, message: "Category deleted", id: Number.parseInt(id, 10) });
+    }
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
 });
-
 
 // === Pages ===
 app.get("/", (req, res) => {
