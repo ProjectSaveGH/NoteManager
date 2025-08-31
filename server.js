@@ -16,6 +16,10 @@ const log = (msg) => {
   fs.appendFileSync(logFile, text + "\n");
 };
 
+function isValidHex(hex) {
+  return /^#[0-9A-Fa-f]{6}$/.test(String(hex));
+};
+
 // === Middleware ===
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -181,6 +185,116 @@ app.get("/user/verify", (req, res) => {
     if (!ok) return res.status(401).json({ success: false, error: "Password incorrect" });
 
     res.json({ success: true, message: "Login successful", username });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/category/create", (req, res) => {
+  const data = req.body;
+  if (!data.name) return res.status(400).json({ success: false, error: "Category name is required" });
+  if (!isValidHex(data.color)) return res.status(400).json({ success: false, error: "Not a valid hex color" });
+  if (!data.user) return res.status(400).json({ success: false, error: "User is required" });
+  try {
+    let categoryId;
+    jsonTools("./data.json", (json) => {
+      if (!Array.isArray(json.category)) json.category = [];
+      categoryId = (json.category.reduce((maxId, cat) => Math.max(maxId, cat.id), 0) || 0) + 1;
+      json.category.push({
+        id: categoryId,
+        name: data.name,
+        color: data.color,
+        user: data.user
+      });
+    });
+    res.json({ success: true, message: "Category created", categoryId });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/category/list", (req, res) => {
+  const { user } = req.query;
+  if (!user) return res.status(400).json({ success: false, error: "User is required" });
+  try {
+    const data = loadJson("./data.json");
+    const categories = (Array.isArray(data.category) ? data.category : []).filter(cat => cat.user === user);
+    res.json({ success: true, categories });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+
+app.get("/category/get", (req, res) => {
+  const { id, user } = req.query;
+  if (!id) return res.status(400).json({ success: false, error: "Category id is required" });
+  if (!user) return res.status(400).json({ success: false, error: "User is required" });
+  try {
+    const data = loadJson("./data.json");
+    const idNum = Number.parseInt(id, 10);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ success: false, error: "id must be an integer" });
+    }
+    const category = (Array.isArray(data.category) ? data.category : [])
+      .find(cat => cat.id === idNum && cat.user === user);
+    if (!category) return res.status(404).json({ success: false, error: "Category not found" });
+    res.json({ success: true, category });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+// Update category
+app.post("/category/update", (req, res) => {
+  const data = req.body;
+  if (!data.id) return res.status(400).json({ success: false, error: "Category id is required" });
+  const name = typeof data.name === "string" ? data.name.trim() : "";
+  if (!name) return res.status(400).json({ success: false, error: "Category name is required" });
+  if (!isValidHex(data.color)) return res.status(400).json({ success: false, error: "Not a valid hex color" });
+  if (!data.user) return res.status(400).json({ success: false, error: "User is required" });
+  try {
+    let updated = false;
+    jsonTools("./data.json", (json) => {
+      if (!Array.isArray(json.category)) json.category = [];
+      const idNum = Number.parseInt(data.id, 10);
+      if (!Number.isFinite(idNum)) throw new Error("id must be an integer");
+      const category = json.category.find(cat => cat.id === idNum && cat.user === data.user);
+      if (!category) throw new Error("Category not found");
+      category.name = name;
+      category.color = data.color;
+      updated = true;
+    });
+    if (updated) res.json({ success: true, message: "Category updated", id: Number.parseInt(data.id, 10) });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.delete("/category/delete", (req, res) => {
+  const { id, user } = req.query;
+  if (!id) return res.status(400).json({ success: false, error: "Category id is required" });
+  if (!user) return res.status(400).json({ success: false, error: "User is required" });
+  try {
+    let deleted = false;
+    jsonTools("./data.json", (json) => {
+      if (!Array.isArray(json.category)) json.category = [];
+
+      // Validate and strictly compare numerical id
+      const idNum = Number.parseInt(id, 10);
+      if (!Number.isFinite(idNum)) throw new Error("id must be an integer");
+      const index = json.category.findIndex(
+        cat => cat.id === idNum && cat.user === user
+      );
+      if (index === -1) throw new Error("Category not found");
+
+      json.category.splice(index, 1);
+      deleted = true;
+    });
+
+    if (deleted) {
+      // Return the parsed numeric id in the response
+      res.json({ success: true, message: "Category deleted", id: Number.parseInt(id, 10) });
+    }
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
