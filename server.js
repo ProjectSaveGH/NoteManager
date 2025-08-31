@@ -248,20 +248,23 @@ app.get("/category/get", (req, res) => {
 app.post("/category/update", (req, res) => {
   const data = req.body;
   if (!data.id) return res.status(400).json({ success: false, error: "Category id is required" });
-  if (!data.name) return res.status(400).json({ success: false, error: "Category name is required" });
+  const name = typeof data.name === "string" ? data.name.trim() : "";
+  if (!name) return res.status(400).json({ success: false, error: "Category name is required" });
   if (!isValidHex(data.color)) return res.status(400).json({ success: false, error: "Not a valid hex color" });
   if (!data.user) return res.status(400).json({ success: false, error: "User is required" });
   try {
     let updated = false;
     jsonTools("./data.json", (json) => {
       if (!Array.isArray(json.category)) json.category = [];
-      const category = json.category.find(cat => cat.id == data.id && cat.user === data.user);
+      const idNum = Number.parseInt(data.id, 10);
+      if (!Number.isFinite(idNum)) throw new Error("id must be an integer");
+      const category = json.category.find(cat => cat.id === idNum && cat.user === data.user);
       if (!category) throw new Error("Category not found");
-      category.name = data.name;
+      category.name = name;
       category.color = data.color;
       updated = true;
     });
-    if (updated) res.json({ success: true, message: "Category updated", id: data.id });
+    if (updated) res.json({ success: true, message: "Category updated", id: Number.parseInt(data.id, 10) });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }
