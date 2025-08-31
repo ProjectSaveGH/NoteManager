@@ -232,7 +232,12 @@ app.get("/category/get", (req, res) => {
   if (!user) return res.status(400).json({ success: false, error: "User is required" });
   try {
     const data = loadJson("./data.json");
-    const category = (Array.isArray(data.category) ? data.category : []).find(cat => cat.id == id && cat.user === user);
+    const idNum = Number.parseInt(id, 10);
+    if (!Number.isFinite(idNum)) {
+      return res.status(400).json({ success: false, error: "id must be an integer" });
+    }
+    const category = (Array.isArray(data.category) ? data.category : [])
+      .find(cat => cat.id === idNum && cat.user === user);
     if (!category) return res.status(404).json({ success: false, error: "Category not found" });
     res.json({ success: true, category });
   } catch (err) {
