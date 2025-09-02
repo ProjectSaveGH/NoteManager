@@ -23,9 +23,15 @@ if not api_key:
 # GitHub repo info
 base_branch = "main"
 
+
 def run_verbose(cmd, description="", capture_output=False):
     """Run a shell command with rich verbose output."""
-    console.print(Panel(f"[bold cyan]Running:[/bold cyan] {' '.join(cmd)}\n{description}", style="magenta"))
+    console.print(
+        Panel(
+            f"[bold cyan]Running:[/bold cyan] {' '.join(cmd)}\n{description}",
+            style="magenta",
+        )
+    )
     if capture_output:
         result = subprocess.run(cmd, text=True, capture_output=True)
         if result.stdout:
@@ -35,6 +41,7 @@ def run_verbose(cmd, description="", capture_output=False):
         return result
     else:
         subprocess.run(cmd, check=True)
+
 
 def gemini_generate(prompt, task_name):
     """Show spinner while Gemini generates content."""
@@ -47,8 +54,11 @@ def gemini_generate(prompt, task_name):
     ) as progress:
         task = progress.add_task(f"{task_name} in progress", start=False)
         progress.start_task(task)
-        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", contents=prompt
+        )
     return response.text.strip()
+
 
 # Stage all changes
 run_verbose(["git", "add", "."], description="Staging all changes")
@@ -99,13 +109,18 @@ console.print(Panel(pr_title, title="PR Title", style="yellow"))
 
 # Create branch
 branch_name = f"{labels[0]}/auto-update-{int(time.time())}"
-run_verbose(["git", "checkout", "-b", branch_name], description=f"Creating branch: {branch_name}")
+run_verbose(
+    ["git", "checkout", "-b", branch_name],
+    description=f"Creating branch: {branch_name}",
+)
 
 # Commit changes
 run_verbose(["git", "commit", "-m", commit_message], description="Committing changes")
 
 # Push branch
-run_verbose(["git", "push", "origin", branch_name], description="Pushing Branch to remote")
+run_verbose(
+    ["git", "push", "origin", branch_name], description="Pushing Branch to remote"
+)
 # GitHub API info
 repo = os.getenv("GITHUB_REPO", "ProjectSaveGH/NoteManager")
 token = os.getenv("GITHUB_TOKEN")
@@ -121,7 +136,7 @@ payload = {
     "title": pr_title,
     "head": branch_name,
     "base": base_branch,
-    "body": f"Commit Message:\n{commit_message}\n\nThis PR was generated automatically using Gemini."
+    "body": f"Commit Message:\n{commit_message}\n\nThis PR was generated automatically using Gemini.",
 }
 response = requests.post(url_create_pr, json=payload, headers=headers)
 
@@ -129,7 +144,9 @@ if response.status_code == 201:
     pr_number = response.json()["number"]
     console.print(f"[bold green]✅ Pull Request created: #{pr_number}[/bold green]")
 else:
-    console.print(f"[bold red]❌ Failed to create PR:[/bold red] {response.status_code} {response.text}")
+    console.print(
+        f"[bold red]❌ Failed to create PR:[/bold red] {response.status_code} {response.text}"
+    )
     pr_number = None
 
 # Add labels if PR creation succeeded
@@ -138,22 +155,31 @@ if pr_number:
     payload_labels = {"labels": labels}
     resp_labels = requests.post(url_labels, json=payload_labels, headers=headers)
     if resp_labels.status_code == 200:
-        console.print(f"[bold green]✅ Labels added to PR #{pr_number}:[/bold green] {', '.join(labels)}")
+        console.print(
+            f"[bold green]✅ Labels added to PR #{pr_number}:[/bold green] {', '.join(labels)}"
+        )
     else:
-        console.print(f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}")
+        console.print(
+            f"[bold red]❌ Failed to add labels:[/bold red] {resp_labels.status_code} {resp_labels.text}"
+        )
 
 # Optional: reset local main to match remote (opt-in)
 if os.getenv("RESET_LOCAL_MAIN", "0") == "1":
     run_verbose(
         ["git", "fetch", "origin", "--prune"],
-        description="Sync with origin before resetting local main"
+        description="Sync with origin before resetting local main",
     )
     run_verbose(
         ["git", "checkout", "-B", "main", "origin/main"],
-        description="Reset local main to match origin/main"
+        description="Reset local main to match origin/main",
     )
-    run_verbose(["git", "pull"], description="Trying to pull changes, if previous step did not work")
+    run_verbose(
+        ["git", "pull"],
+        description="Trying to pull changes, if previous step did not work",
+    )
 # Clean up
 if os.path.exists(diff_file):
     os.remove(diff_file)
-    console.print(f"[bold magenta]Temporary diff file {diff_file} removed[/bold magenta]")
+    console.print(
+        f"[bold magenta]Temporary diff file {diff_file} removed[/bold magenta]"
+    )
