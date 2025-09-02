@@ -19,10 +19,17 @@ CONFIG = {
     "protected_files": [".env"],
     "hooks": {"pre_update": [], "post_update": []},
     "dry_run": False,
-    "backup_password": None
+    "backup_password": None,
 }
 
-REQUIRED_KEYS = ["exclude_from_backup", "protected_files", "hooks", "dry_run", "backup_password"]
+REQUIRED_KEYS = [
+    "exclude_from_backup",
+    "protected_files",
+    "hooks",
+    "dry_run",
+    "backup_password",
+]
+
 
 # ----------------- Config -----------------
 def load_config():
@@ -39,6 +46,7 @@ def load_config():
     else:
         console.print("[WARN] No config found, using default values")
 
+
 def validate_config(cfg):
     # Missing keys
     for key in REQUIRED_KEYS:
@@ -49,13 +57,18 @@ def validate_config(cfg):
         if key not in REQUIRED_KEYS:
             suggestion = get_close_matches(key, REQUIRED_KEYS, n=1)
             if suggestion:
-                console.print(f"[WARN] Unknown config key '{key}'. Did you mean '{suggestion[0]}'?")
+                console.print(
+                    f"[WARN] Unknown config key '{key}'. Did you mean '{suggestion[0]}'?"
+                )
             else:
                 console.print(f"[WARN] Unknown config key '{key}'.")
     # Password warning
     password = cfg.get("backup_password")
     if password and len(password) < 4:
-        console.print("[WARN] Backup password is very short; consider using a longer password.")
+        console.print(
+            "[WARN] Backup password is very short; consider using a longer password."
+        )
+
 
 # ----------------- Commands -----------------
 def run_command(cmd, capture=False):
@@ -72,6 +85,7 @@ def run_command(cmd, capture=False):
         console.print(f"✔ {cmd}")
         return result.stdout.strip()
 
+
 # ----------------- Git & Repo -----------------
 def ensure_gitignore():
     gitignore = Path(".gitignore")
@@ -82,11 +96,17 @@ def ensure_gitignore():
                 f.write(f"{pf}\n")
                 console.print(f"'{pf}' added to .gitignore.")
 
+
 def sensitive_file_check():
-    gitignore = Path(".gitignore").read_text().splitlines() if Path(".gitignore").exists() else []
+    gitignore = (
+        Path(".gitignore").read_text().splitlines()
+        if Path(".gitignore").exists()
+        else []
+    )
     for pf in CONFIG["protected_files"]:
         if pf not in gitignore:
             console.print(f"[WARN] Sensitive file {pf} not in .gitignore!")
+
 
 def get_default_branch():
     branch_info = run_command("git remote show origin", capture=True)
@@ -98,6 +118,7 @@ def get_default_branch():
     local_branch = run_command("git rev-parse --abbrev-ref HEAD", capture=True)
     return local_branch if local_branch else "main"
 
+
 def refresh_repo(branch):
     console.print(Panel(f"Updating repository on branch '{branch}'"))
     run_command("git fetch --all")
@@ -105,16 +126,20 @@ def refresh_repo(branch):
     run_command(f"git pull origin {branch}")
     run_command("git gc")
 
+
 def repo_status():
     branch = run_command("git rev-parse --abbrev-ref HEAD", capture=True) or "?"
     latest_commit = run_command("git log -1 --pretty=%B", capture=True) or "?"
     author = run_command("git log -1 --pretty=%an", capture=True) or "?"
-    table = Table(title="Repository Status", show_header=True, header_style="bold magenta")
+    table = Table(
+        title="Repository Status", show_header=True, header_style="bold magenta"
+    )
     table.add_column("Branch", style="cyan")
     table.add_column("Last Commit", style="green")
     table.add_column("Author", style="yellow")
     table.add_row(branch, latest_commit, author)
     console.print(table)
+
 
 # ----------------- Backup -----------------
 def should_exclude(item_name):
@@ -122,6 +147,7 @@ def should_exclude(item_name):
         if fnmatch.fnmatch(item_name, f"{pattern}*"):
             return True
     return False
+
 
 def backup_repo():
     timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
@@ -138,10 +164,13 @@ def backup_repo():
 
     if password:
         if len(password) < 4:
-            console.print("[WARN] Backup password is very short; consider using a longer password.")
+            console.print(
+                "[WARN] Backup password is very short; consider using a longer password."
+            )
         password_bytes = password.encode("utf-8")
-        with pyzipper.AESZipFile(zip_path, 'w', compression=pyzipper.ZIP_DEFLATED,
-                                 encryption=pyzipper.WZ_AES) as zf:
+        with pyzipper.AESZipFile(
+            zip_path, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES
+        ) as zf:
             zf.setpassword(password_bytes)
             for item in Path(".").rglob("*"):
                 if item.is_file():
@@ -167,6 +196,7 @@ def backup_repo():
     hash_file.write_text(sha256.hexdigest())
     console.print(f"Backup completed: {zip_path}, hash stored in {hash_file}")
 
+
 # ----------------- Hooks -----------------
 def run_hooks(phase):
     hooks = CONFIG.get("hooks", {}).get(phase, [])
@@ -178,6 +208,7 @@ def run_hooks(phase):
             console.print(f"[dry-run hook] {cmd}")
         else:
             run_command(cmd)
+
 
 # ----------------- Dependencies -----------------
 def install_dependencies():
@@ -195,16 +226,24 @@ def install_dependencies():
     for req in sorted(reqs):
         run_command(f"pip install -r {req}")
 
+
 # ----------------- Branch Choice -----------------
 def interactive_branch_choice(default_branch):
     branches = run_command("git branch -r", capture=True)
     if not branches:
         return default_branch
-    branch_list = [b.strip().replace("origin/", "") for b in branches.splitlines() if "->" not in b]
+    branch_list = [
+        b.strip().replace("origin/", "") for b in branches.splitlines() if "->" not in b
+    ]
     if not branch_list:
         return default_branch
-    choice = Prompt.ask("Which branch do you want to update?", choices=branch_list, default=default_branch)
+    choice = Prompt.ask(
+        "Which branch do you want to update?",
+        choices=branch_list,
+        default=default_branch,
+    )
     return choice
+
 
 # ----------------- Main -----------------
 if __name__ == "__main__":
@@ -220,4 +259,6 @@ if __name__ == "__main__":
     install_dependencies()
     run_hooks("post_update")
     repo_status()
-    console.print("Repository is up-to-date, dependencies installed, encrypted backup created.")
+    console.print(
+        "Repository is up-to-date, dependencies installed, encrypted backup created."
+    )
