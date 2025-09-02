@@ -11,6 +11,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt
 from difflib import get_close_matches
+import argparse
 
 console = Console()
 
@@ -247,11 +248,19 @@ def interactive_branch_choice(default_branch):
 
 # ----------------- Main -----------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Git Repo Refresher")
+    parser.add_argument("--no-backup", action="store_true", help="Skip creating a backup")
+    args = parser.parse_args()
+
     console.print(Panel("Git Repo Refresher started", expand=True))
     load_config()
     ensure_gitignore()
     sensitive_file_check()
-    backup_repo()
+    if not args.no_backup:
+        backup_repo()
+    else:
+        console.print("[INFO] Skipping backup (flag --no-backup)")
+
     default_branch = get_default_branch()
     branch = interactive_branch_choice(default_branch)
     run_hooks("pre_update")
@@ -260,5 +269,5 @@ if __name__ == "__main__":
     run_hooks("post_update")
     repo_status()
     console.print(
-        "Repository is up-to-date, dependencies installed, encrypted backup created."
+        "Repository is up-to-date, dependencies installed, backup step handled."
     )
