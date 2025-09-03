@@ -10,11 +10,18 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt
-from difflib import get_close_matches
 import argparse
+from difflib import get_close_matches
 
+# ----------------- Console -----------------
 console = Console()
 
+
+def style_panel(title, text, color="cyan"):
+    return Panel(text, title=title, style=color, expand=True)
+
+
+# ----------------- Config -----------------
 CONFIG = {
     "exclude_from_backup": ["backup"],
     "protected_files": [".env"],
@@ -23,16 +30,9 @@ CONFIG = {
     "backup_password": None,
 }
 
-REQUIRED_KEYS = [
-    "exclude_from_backup",
-    "protected_files",
-    "hooks",
-    "dry_run",
-    "backup_password",
-]
+REQUIRED_KEYS = list(CONFIG.keys())
 
 
-# ----------------- Config -----------------
 def load_config():
     cfg_file = Path("refresh.config.json")
     if cfg_file.exists():
@@ -49,11 +49,9 @@ def load_config():
 
 
 def validate_config(cfg):
-    # Missing keys
     for key in REQUIRED_KEYS:
         if key not in cfg:
             console.print(f"[ERROR] Missing config key '{key}'")
-    # Typo suggestions
     for key in cfg.keys():
         if key not in REQUIRED_KEYS:
             suggestion = get_close_matches(key, REQUIRED_KEYS, n=1)
@@ -63,31 +61,21 @@ def validate_config(cfg):
                 )
             else:
                 console.print(f"[WARN] Unknown config key '{key}'.")
-    # Password warning
-    password = cfg.get("backup_password")
-    if password and len(password) < 4:
-        console.print(
-            "[WARN] Backup password is very short; consider using a longer password."
-        )
 
 
 # ----------------- Commands -----------------
 def run_command(cmd, capture=False):
     if CONFIG.get("dry_run"):
-        console.print(f"[dry-run] {cmd}")
-        return "" if not capture else None
+        console.print(f"[DRY-RUN] {cmd}")
+        return None
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
         console.print(f"[ERROR] Command failed: {cmd}\n{result.stderr.strip()}")
-        return None if capture else ""
-    if capture:
-        return result.stdout.strip()
-    else:
-        console.print(f"✔ {cmd}")
-        return result.stdout.strip()
+        return None
+    return result.stdout.strip() if capture else ""
 
 
-# ----------------- Git & Repo -----------------
+# ----------------- Git -----------------
 def ensure_gitignore():
     gitignore = Path(".gitignore")
     existing = gitignore.read_text().splitlines() if gitignore.exists() else []
@@ -115,13 +103,11 @@ def get_default_branch():
         for line in branch_info.splitlines():
             if "HEAD branch:" in line:
                 return line.split(":")[1].strip()
-    # Fallback: prüfe lokalen Branch
-    local_branch = run_command("git rev-parse --abbrev-ref HEAD", capture=True)
-    return local_branch if local_branch else "main"
+    return run_command("git rev-parse --abbrev-ref HEAD", capture=True) or "main"
 
 
 def refresh_repo(branch):
-    console.print(Panel(f"Updating repository on branch '{branch}'"))
+    console.print(style_panel("Repo Update", f"Updating branch '{branch}'", "magenta"))
     run_command("git fetch --all")
     run_command(f"git reset --hard origin/{branch}")
     run_command(f"git pull origin {branch}")
@@ -147,7 +133,7 @@ def repo_status():
             table.add_row(commit_hash, author, message)
         except ValueError:
             continue
-
+            
     console.print(table)
 
 
@@ -167,22 +153,17 @@ def backup_repo():
     zip_path = backup_dir / f"backup_{timestamp}.zip"
     password = CONFIG.get("backup_password")
 
-    console.print(Panel(f"Creating encrypted backup: {zip_path}"))
+    console.print(style_panel("Backup", f"Creating {zip_path}", "cyan"))
 
     if CONFIG.get("dry_run"):
-        console.print("[dry-run] Backup skipped")
+        console.print("[DRY-RUN] Backup skipped")
         return
 
     if password:
-        if len(password) < 4:
-            console.print(
-                "[WARN] Backup password is very short; consider using a longer password."
-            )
-        password_bytes = password.encode("utf-8")
         with pyzipper.AESZipFile(
             zip_path, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES
         ) as zf:
-            zf.setpassword(password_bytes)
+            zf.setpassword(password.encode("utf-8"))
             for item in Path(".").rglob("*"):
                 if item.is_file():
                     rel_path = str(item.relative_to(Path(".")))
@@ -198,14 +179,13 @@ def backup_repo():
                         continue
                     zf.write(item, rel_path)
 
-    # Hash generation
-    hash_file = backup_dir / f"{timestamp}.hash"
     sha256 = hashlib.sha256()
     with open(zip_path, "rb") as f:
         while chunk := f.read(8192):
             sha256.update(chunk)
+    hash_file = backup_dir / f"{timestamp}.hash"
     hash_file.write_text(sha256.hexdigest())
-    console.print(f"Backup completed: {zip_path}, hash stored in {hash_file}")
+    console.print(f"Backup completed. Hash stored in {hash_file}")
 
 
 # ----------------- Hooks -----------------
@@ -213,28 +193,22 @@ def run_hooks(phase):
     hooks = CONFIG.get("hooks", {}).get(phase, [])
     if not hooks:
         return
-    console.print(Panel(f"Running {phase} hooks"))
+    console.print(style_panel("Hooks", f"Running {phase}", "cyan"))
     for cmd in hooks:
-        if CONFIG.get("dry_run"):
-            console.print(f"[dry-run hook] {cmd}")
-        else:
-            run_command(cmd)
+        run_command(cmd)
 
 
 # ----------------- Dependencies -----------------
 def install_dependencies():
-    # Node.js
     if Path("package-lock.json").exists():
         run_command("npm ci")
     elif Path("package.json").exists():
         run_command("npm install")
-    # Python
     if Path("poetry.lock").exists():
         run_command("poetry install")
     if Path("Pipfile.lock").exists():
         run_command("pipenv install")
-    reqs = list(Path(".").glob("requirements*.txt"))
-    for req in sorted(reqs):
+    for req in sorted(Path(".").glob("requirements*.txt")):
         run_command(f"pip install -r {req}")
 
 
@@ -248,36 +222,41 @@ def interactive_branch_choice(default_branch):
     ]
     if not branch_list:
         return default_branch
-    choice = Prompt.ask(
-        "Which branch do you want to update?",
-        choices=branch_list,
-        default=default_branch,
-    )
-    return choice
+    return Prompt.ask("Which branch?", choices=branch_list, default=default_branch)
 
 
 # ----------------- Main -----------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Git Repo Refresher")
-    parser.add_argument("--no-backup", action="store_true", help="Skip creating a backup")
+    parser.add_argument("--no-backup", action="store_true", help="Skip backup")
+    parser.add_argument("--no-hooks", action="store_true", help="Skip pre/post hooks")
+    parser.add_argument("--no-deps", action="store_true", help="Skip dependencies")
+    parser.add_argument("--silent", action="store_true", help="Minimal output")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate only")
     args = parser.parse_args()
 
-    console.print(Panel("Git Repo Refresher started", expand=True))
+    CONFIG["dry_run"] = args.dry_run
+
+    console.print(style_panel("🚀 Git Repo Refresher", "Starting...", "cyan"))
     load_config()
     ensure_gitignore()
     sensitive_file_check()
+
     if not args.no_backup:
         backup_repo()
     else:
-        console.print("[INFO] Skipping backup (flag --no-backup)")
+        console.print("[INFO] Skipping backup (--no-backup)")
 
     default_branch = get_default_branch()
     branch = interactive_branch_choice(default_branch)
-    run_hooks("pre_update")
+
+    if not args.no_hooks:
+        run_hooks("pre_update")
     refresh_repo(branch)
-    install_dependencies()
-    run_hooks("post_update")
+    if not args.no_deps:
+        install_dependencies()
+    if not args.no_hooks:
+        run_hooks("post_update")
+
     repo_status()
-    console.print(
-        "Repository is up-to-date, dependencies installed, backup step handled."
-    )
+    console.print("✅ Repository updated & ready")
