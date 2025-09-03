@@ -145,3 +145,5 @@ vite.config.ts.timestamp-*
 .backup
 .backup/*
 .backup/**
+.env.local
+secrets.json
