@@ -115,15 +115,27 @@ def refresh_repo(branch):
 
 
 def repo_status():
-    branch = run_command("git rev-parse --abbrev-ref HEAD", capture=True) or "?"
-    latest_commit = run_command("git log -1 --pretty=%B", capture=True) or "?"
-    author = run_command("git log -1 --pretty=%an", capture=True) or "?"
-    table = Table(title="Repository Status", header_style="bold cyan")
-    table.add_column("Branch", style="yellow")
-    table.add_column("Last Commit", style="green")
-    table.add_column("Author", style="magenta")
-    table.add_row(branch, latest_commit, author)
+    commits = run_command("git log -10 --pretty=format:'%h|%an|%s'", capture=True)
+    if not commits:
+        console.print("[WARN] No commits found")
+        return
+
+    table = Table(
+        title="Last 10 Commits", show_header=True, header_style="bold magenta"
+    )
+    table.add_column("Hash", style="cyan")
+    table.add_column("Author", style="yellow")
+    table.add_column("Message", style="green")
+
+    for line in commits.splitlines():
+        try:
+            commit_hash, author, message = line.split("|", 2)
+            table.add_row(commit_hash, author, message)
+        except ValueError:
+            continue
+            
     console.print(table)
+
 
 
 # ----------------- Backup -----------------
